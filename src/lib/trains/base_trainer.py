@@ -10,23 +10,27 @@ from utils.utils import AverageMeter
 
 
 class ModelWithLoss(torch.nn.Module):
-  def __init__(self, model, loss):
+  def __init__(self, model, loss, mixed_precision: bool):
     super(ModelWithLoss, self).__init__()
     self.model = model
     self.loss = loss
+    self.mixed_precision = mixed_precision
   
   def forward(self, batch):
-    outputs = self.model(batch['input'])
-    loss, loss_stats = self.loss(outputs, batch)
+    with torch.cuda.amp.autocast(enabled=self.mixed_precision):
+      outputs = self.model(batch['input'])
+      loss, loss_stats = self.loss(outputs, batch)
     return outputs[-1], loss, loss_stats
+
 
 class BaseTrainer(object):
   def __init__(
-    self, opt, model, optimizer=None):
+    self, opt, model, optimizer=None, mixed_precision: bool = False):
     self.opt = opt
     self.optimizer = optimizer
+    self.scaler = torch.cuda.amp.GradScaler(enabled=mixed_precision)
     self.loss_stats, self.loss = self._get_losses(opt)
-    self.model_with_loss = ModelWithLoss(model, self.loss)
+    self.model_with_loss = ModelWithLoss(model, self.loss, mixed_precision)
 
   def set_device(self, gpus, chunk_sizes, device):
     if len(gpus) > 1:
@@ -70,8 +74,9 @@ class BaseTrainer(object):
       loss = loss.mean()
       if phase == 'train':
         self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        self.scaler.scale(loss).backward()
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
       batch_time.update(time.time() - end)
       end = time.time()
 

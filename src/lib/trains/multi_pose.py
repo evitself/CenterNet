@@ -85,8 +85,8 @@ class MultiPoseLoss(torch.nn.Module):
     return loss, loss_stats
 
 class MultiPoseTrainer(BaseTrainer):
-  def __init__(self, opt, model, optimizer=None):
-    super(MultiPoseTrainer, self).__init__(opt, model, optimizer=optimizer)
+  def __init__(self, opt, model, optimizer=None, mixed_precision: bool = False):
+    super(MultiPoseTrainer, self).__init__(opt, model, optimizer=optimizer, mixed_precision=mixed_precision)
   
   def _get_losses(self, opt):
     loss_states = ['loss', 'hm_loss', 'hp_loss', 'hm_hp_loss', 

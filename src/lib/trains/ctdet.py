@@ -73,9 +73,10 @@ class CtdetLoss(torch.nn.Module):
                   'wh_loss': wh_loss, 'off_loss': off_loss}
     return loss, loss_stats
 
+
 class CtdetTrainer(BaseTrainer):
-  def __init__(self, opt, model, optimizer=None):
-    super(CtdetTrainer, self).__init__(opt, model, optimizer=optimizer)
+  def __init__(self, opt, model, optimizer=None, mixed_precision: bool = False):
+    super(CtdetTrainer, self).__init__(opt, model, optimizer=optimizer, mixed_precision=mixed_precision)
   
   def _get_losses(self, opt):
     loss_states = ['loss', 'hm_loss', 'wh_loss', 'off_loss']

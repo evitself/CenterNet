@@ -64,8 +64,8 @@ class DddLoss(torch.nn.Module):
     return loss, loss_stats
 
 class DddTrainer(BaseTrainer):
-  def __init__(self, opt, model, optimizer=None):
-    super(DddTrainer, self).__init__(opt, model, optimizer=optimizer)
+  def __init__(self, opt, model, optimizer=None, mixed_precision: bool = False):
+    super(DddTrainer, self).__init__(opt, model, optimizer=optimizer, mixed_precision=mixed_precision)
   
   def _get_losses(self, opt):
     loss_states = ['loss', 'hm_loss', 'dep_loss', 'dim_loss', 'rot_loss', 

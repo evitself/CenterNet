@@ -97,6 +97,8 @@ class opts(object):
     self.parser.add_argument('--trainval', action='store_true',
                              help='include validation in training and '
                                   'test on test set')
+    self.parser.add_argument('--mixed_precision', action='store_true',
+                             help='use gpu mixed precision to train')
 
     # test
     self.parser.add_argument('--flip_test', action='store_true',

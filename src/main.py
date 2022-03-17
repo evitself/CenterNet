@@ -37,7 +37,7 @@ def main(opt):
       model, opt.load_model, optimizer, opt.resume, opt.lr, opt.lr_step)
 
   Trainer = train_factory[opt.task]
-  trainer = Trainer(opt, model, optimizer)
+  trainer = Trainer(opt, model, optimizer, opt.mixed_precision)
   trainer.set_device(opt.gpus, opt.chunk_sizes, opt.device)
 
   print('Setting up data...')

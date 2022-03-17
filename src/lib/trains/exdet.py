@@ -41,8 +41,8 @@ class ExdetLoss(torch.nn.Module):
     return loss, loss_stats
 
 class ExdetTrainer(BaseTrainer):
-  def __init__(self, opt, model, optimizer=None):
-    super(ExdetTrainer, self).__init__(opt, model, optimizer=optimizer)
+  def __init__(self, opt, model, optimizer=None, mixed_precision: bool = False):
+    super(ExdetTrainer, self).__init__(opt, model, optimizer=optimizer, mixed_precision=mixed_precision)
     self.decode = agnex_ct_decode if opt.agnostic_ex else exct_decode
 
   def _get_losses(self, opt):
