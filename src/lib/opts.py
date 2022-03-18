@@ -335,12 +335,22 @@ class opts(object):
     print('heads', opt.heads)
     return opt
 
+  # num_classes = 20
+  # default_resolution = [384, 384]
+  # mean = np.array([0.485, 0.456, 0.406],
+  #                  dtype=np.float32).reshape(1, 1, 3)
+  # std  = np.array([0.229, 0.224, 0.225],
+  #                  dtype=np.float32).reshape(1, 1, 3)
+
   def init(self, args=''):
     default_dataset_info = {
-      'ctdet': {'default_resolution': [512, 512], 'num_classes': 80, 
-                'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
-                'dataset': 'coco'},
-      'exdet': {'default_resolution': [512, 512], 'num_classes': 80, 
+      # 'ctdet': {'default_resolution': [512, 512], 'num_classes': 80,
+      #                          'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
+      #                          'dataset': 'coco'},
+      'ctdet': {'default_resolution': [384, 384], 'num_classes': 20,
+                'mean': [0.485, 0.456, 0.406], 'std': [0.229, 0.224, 0.225],
+                'dataset': 'pascal'},
+      'exdet': {'default_resolution': [512, 512], 'num_classes': 80,
                 'mean': [0.408, 0.447, 0.470], 'std': [0.289, 0.274, 0.278],
                 'dataset': 'coco'},
       'multi_pose': {
