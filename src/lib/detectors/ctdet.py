@@ -94,3 +94,19 @@ class CtdetDetector(BaseDetector):
         if bbox[4] > self.opt.vis_thresh:
           debugger.add_coco_bbox(bbox[:4], j - 1, bbox[4], img_id='ctdet')
     debugger.show_all_imgs(pause=self.pause)
+
+  def export(self, batch_size, ch, h, w, output_file, opset_ver=10):
+    rand_x = torch.randn(batch_size, ch, h, w, requires_grad=True).cuda()
+    _out = self.model(rand_x)[-1]
+    torch.onnx.export(self.model,
+                      rand_x,
+                      output_file,
+                      opset_version=opset_ver,
+                      do_constant_folding=True,
+                      input_names=['input'],
+                      output_names=['hm', 'wh', 'reg'],
+                      dynamic_axes={'input': {0: 'batch_size'},
+                                    'hm': {0: 'batch_size'},
+                                    'wh': {0: 'batch_size'},
+                                    'reg': {0: 'batch_size'}}
+    )

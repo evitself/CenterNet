@@ -226,6 +226,10 @@ class opts(object):
     self.parser.add_argument('--eval_oracle_dep', action='store_true', 
                              help='use ground truth depth.')
 
+    # export
+    self.parser.add_argument('--output_file', default='',
+                             help='output filename of exported model')
+
   def parse(self, args=''):
     if args == '':
       opt = self.parser.parse_args()
