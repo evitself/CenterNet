@@ -106,14 +106,14 @@ class Bottleneck(nn.Module):
         return out
 
 
-class PoseResNet(nn.Module):
+class ResNetFpn(nn.Module):
 
     def __init__(self, block, layers, heads, head_conv, **kwargs):
         self.inplanes = 64
         self.deconv_with_bias = False
         self.heads = heads
 
-        super(PoseResNet, self).__init__()
+        super(ResNetFpn, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
         self.bn1 = nn.BatchNorm2d(64, momentum=BN_MOMENTUM)
@@ -276,9 +276,11 @@ class PoseResNet(nn.Module):
         d2 = self.deconv_layer2(d1 + p3)
         d3 = self.deconv_layer3(d2 + p2)
 
+        feature = d3 + p1
+
         ret = {}
         for head in self.heads:
-            ret[head] = self.__getattr__(head)(d3 + p1)
+            ret[head] = self.__getattr__(head)(feature)
         return [ret]
 
     def init_weights(self, num_layers, pretrained=True):
@@ -335,9 +337,9 @@ resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
                152: (Bottleneck, [3, 8, 36, 3])}
 
 
-def get_pose_net(num_layers, heads, head_conv):
+def get_resnet_fpn(num_layers, heads, head_conv):
     block_class, layers = resnet_spec[num_layers]
 
-    model = PoseResNet(block_class, layers, heads, head_conv=head_conv)
+    model = ResNetFpn(block_class, layers, heads, head_conv=head_conv)
     model.init_weights(num_layers, pretrained=True)
     return model

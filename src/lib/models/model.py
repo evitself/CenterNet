@@ -8,7 +8,7 @@ import torch.nn as nn
 import os
 
 from .networks.msra_resnet import get_pose_net
-from .networks.msra_resnet_fpn import get_pose_net as get_pose_net_fpn
+from .networks.msra_resnet_fpn import get_resnet_fpn as get_pose_net_fpn
 from .networks.dlav0 import get_pose_net as get_dlav0
 from .networks.pose_dla_dcn import get_pose_net as get_dla_dcn
 from .networks.resnet_dcn import get_pose_net as get_pose_net_dcn
