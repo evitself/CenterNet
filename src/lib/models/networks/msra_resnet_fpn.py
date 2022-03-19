@@ -114,11 +114,26 @@ class ResNetFpn(nn.Module):
         self.heads = heads
 
         super(ResNetFpn, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(64, momentum=BN_MOMENTUM)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        # multi stem
+        self.k3_conv = nn.Conv2d(3, 32, kernel_size=3, stride=2, padding=1,
+                                 bias=False)
+        self.k3_bn = nn.BatchNorm2d(32, momentum=BN_MOMENTUM)
+        self.k3_relu = nn.ReLU(inplace=True)
+        self.k3_maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        self.k7_conv = nn.Conv2d(3, 24, kernel_size=7, stride=2, padding=3,
+                                 bias=False)
+        self.k7_bn = nn.BatchNorm2d(24, momentum=BN_MOMENTUM)
+        self.k7_relu = nn.ReLU(inplace=True)
+        self.k7_maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        self.k11_conv = nn.Conv2d(3, 8, kernel_size=11, stride=2, padding=5,
+                                  bias=False)
+        self.k11_bn = nn.BatchNorm2d(8, momentum=BN_MOMENTUM)
+        self.k11_relu = nn.ReLU(inplace=True)
+        self.k11_maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
         self.layer1, l1_in, l1_out = self._make_layer(block, 64, layers[0])
         self.layer2, l2_in, l2_out = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3, l3_in, l3_out = self._make_layer(block, 256, layers[2], stride=2)
@@ -256,12 +271,14 @@ class ResNetFpn(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
 
-        l1 = self.layer1(x)
+        x_k3 = self.k3_maxpool(self.k3_relu(self.k3_bn(self.k3_conv(x))))
+        x_k7 = self.k7_maxpool(self.k7_relu(self.k7_bn(self.k7_conv(x))))
+        x_k11 = self.k7_maxpool(self.k11_relu(self.k11_bn(self.k11_conv(x))))
+
+        x_cat = torch.cat((x_k3, x_k7, x_k11), 1)
+
+        l1 = self.layer1(x_cat)
         p1 = self.layer1_projection(l1)
 
         l2 = self.layer2(l1)
@@ -284,50 +301,59 @@ class ResNetFpn(nn.Module):
         return [ret]
 
     def init_weights(self, num_layers, pretrained=True):
-        if pretrained:
-            # print('=> init resnet deconv weights from normal distribution')
-            for deconv_layer in self.deconv_layers:
-                for _, m in deconv_layer.named_modules():
-                    if isinstance(m, nn.ConvTranspose2d):
-                        # print('=> init {}.weight as normal(0, 0.001)'.format(name))
-                        # print('=> init {}.bias as 0'.format(name))
-                        nn.init.normal_(m.weight, std=0.001)
-                        if self.deconv_with_bias:
-                            nn.init.constant_(m.bias, 0)
-                    elif isinstance(m, nn.BatchNorm2d):
-                        # print('=> init {}.weight as 1'.format(name))
-                        # print('=> init {}.bias as 0'.format(name))
-                        nn.init.constant_(m.weight, 1)
+        for backbone_layer in (self.k3_conv, self.k3_bn, self.k7_conv, self.k7_bn,
+                               self.k11_conv, self.k11_bn,
+                               self.layer1, self.layer2, self.layer3, self.layer4):
+            for _, m in backbone_layer.named_modules():
+                if isinstance(m, nn.Conv2d):
+                    nn.init.normal_(m.weight, std=0.001)
+                elif isinstance(m, nn.BatchNorm2d):
+                    nn.init.constant_(m.weight, 1)
+                    nn.init.constant_(m.bias, 0)
+        # print('=> init resnet deconv weights from normal distribution')
+        for deconv_layer in self.deconv_layers:
+            for _, m in deconv_layer.named_modules():
+                if isinstance(m, nn.ConvTranspose2d):
+                    # print('=> init {}.weight as normal(0, 0.001)'.format(name))
+                    # print('=> init {}.bias as 0'.format(name))
+                    nn.init.normal_(m.weight, std=0.001)
+                    if self.deconv_with_bias:
                         nn.init.constant_(m.bias, 0)
-            for proj_layer in self.projection_layers:
-                for _, m in proj_layer.named_modules():
-                    if isinstance(m, nn.Conv2d):
-                        nn.init.normal_(m.weight, std=0.001)
-                        if self.deconv_with_bias:
+                elif isinstance(m, nn.BatchNorm2d):
+                    # print('=> init {}.weight as 1'.format(name))
+                    # print('=> init {}.bias as 0'.format(name))
+                    nn.init.constant_(m.weight, 1)
+                    nn.init.constant_(m.bias, 0)
+        for proj_layer in self.projection_layers:
+            for _, m in proj_layer.named_modules():
+                if isinstance(m, nn.Conv2d):
+                    nn.init.normal_(m.weight, std=0.001)
+                    if self.deconv_with_bias:
+                        nn.init.constant_(m.bias, 0)
+        # print('=> init final conv weights from normal distribution')
+        for head in self.heads:
+            final_layer = self.__getattr__(head)
+            for i, m in enumerate(final_layer.modules()):
+                if isinstance(m, nn.Conv2d):
+                    # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                    # print('=> init {}.weight as normal(0, 0.001)'.format(name))
+                    # print('=> init {}.bias as 0'.format(name))
+                    if m.weight.shape[0] == self.heads[head]:
+                        if 'hm' in head:
+                            nn.init.constant_(m.bias, -2.19)
+                        else:
+                            nn.init.normal_(m.weight, std=0.001)
                             nn.init.constant_(m.bias, 0)
-            # print('=> init final conv weights from normal distribution')
-            for head in self.heads:
-                final_layer = self.__getattr__(head)
-                for i, m in enumerate(final_layer.modules()):
-                    if isinstance(m, nn.Conv2d):
-                        # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                        # print('=> init {}.weight as normal(0, 0.001)'.format(name))
-                        # print('=> init {}.bias as 0'.format(name))
-                        if m.weight.shape[0] == self.heads[head]:
-                            if 'hm' in head:
-                                nn.init.constant_(m.bias, -2.19)
-                            else:
-                                nn.init.normal_(m.weight, std=0.001)
-                                nn.init.constant_(m.bias, 0)
+        if pretrained:
             # pretrained_state_dict = torch.load(pretrained)
             url = model_urls['resnet{}'.format(num_layers)]
             pretrained_state_dict = model_zoo.load_url(url)
             print('=> loading pretrained model {}'.format(url))
             self.load_state_dict(pretrained_state_dict, strict=False)
-        else:
-            print('=> imagenet pretrained model dose not exist')
-            print('=> please download it first')
-            raise ValueError('imagenet pretrained model does not exist')
+        # else:
+        #     print('=> imagenet pretrained model dose not exist')
+        #     print('=> please download it first')
+        #     raise ValueError('imagenet pretrained model does not exist')
 
 
 resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),
