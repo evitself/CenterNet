@@ -27,7 +27,8 @@ class CtdetDetector(BaseDetector):
   
   def process(self, images, return_time=False):
     with torch.no_grad():
-      output = self.model(images)[-1]
+      with torch.cuda.amp.autocast(enabled=self.opt.mixed_precision):
+        output = self.model(images)[-1]
       hm = output['hm'].sigmoid_()
       wh = output['wh']
       reg = output['reg'] if self.opt.reg_offset else None

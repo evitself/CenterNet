@@ -62,6 +62,8 @@ class Debugger(object):
       self.focal_length = 721.5377
       self.W = 1242
       self.H = 375
+    elif dataset == 'fashionpedia':
+      self.names = fashionpedia_class_name
     num_classes = len(self.names)
     self.down_ratio=down_ratio
     # for bird view
@@ -454,6 +456,18 @@ coco_class_name = [
      'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
      'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase',
      'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+]
+
+fashionpedia_class_name = [
+    'shirt, blouse', 'top, t-shirt, sweatshirt',
+    'sweater', 'cardigan', 'jacket', 'vest', 'pants', 'shorts',
+    'skirt', 'coat', 'dress', 'jumpsuit', 'cape', 'glasses',
+    'hat', 'headband, head covering, hair accessory', 'tie',
+    'glove', 'watch', 'belt', 'leg warmer', 'tights, stockings',
+    'sock', 'shoe', 'bag, wallet', 'scarf', 'umbrella', 'hood',
+    'collar', 'lapel', 'epaulette', 'sleeve', 'pocket', 'neckline',
+    'buckle', 'zipper', 'applique', 'bead', 'bow', 'flower',
+    'fringe', 'ribbon', 'rivet', 'ruffle', 'sequin', 'tassel'
 ]
 
 color_list = np.array(
